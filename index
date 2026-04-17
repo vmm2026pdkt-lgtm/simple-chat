@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot - Single File</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --bg: #0f172a;
+            --glass: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #chat-container {
+            width: 90%;
+            max-width: 500px;
+            height: 70vh;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+
+        #chat-window {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .msg {
+            padding: 12px 16px;
+            border-radius: 15px;
+            max-width: 80%;
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+
+        .user {
+            align-self: flex-end;
+            background: var(--primary);
+            color: white;
+            border-bottom-right-radius: 2px;
+        }
+
+        .ai {
+            align-self: flex-start;
+            background: rgba(255,255,255,0.1);
+            color: #e2e8f0;
+            border-bottom-left-radius: 2px;
+        }
+
+        .input-area {
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 12px;
+            border-radius: 10px;
+            color: white;
+            outline: none;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.8; }
+    </style>
+</head>
+<body>
+
+<div id="chat-container">
+    <div id="chat-window">
+        <div class="msg ai">Hello! I'm your AI assistant. How can I help you today?</div>
+    </div>
+    <div class="input-area">
+        <input type="text" id="user-input" placeholder="Ask me anything...">
+        <button id="send-btn">Send</button>
+    </div>
+</div>
+
+<script>
+    const API_KEY = 'AQ.Ab8RN6Kux2USccG0jnqaN8HY-MkOuAzwFpVRG7YeQB0k-8-IXA'; // Replace with your Gemini API Key
+    const chatWindow = document.getElementById('chat-window');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    async function fetchAIResponse(prompt) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+        
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
+            const data = await response.json();
+            return data.candidates[0].content.parts[0].text;
+        } catch (error) {
+            return "Error: Could not connect to AI. Check your API key.";
+        }
+    }
+
+    async function handleChat() {
+        const text = userInput.value.trim();
+        if (!text) return;
+
+        // User Message
+        appendMessage(text, 'user');
+        userInput.value = '';
+
+        // AI Thinking placeholder
+        const thinkingId = Date.now();
+        appendMessage("...", 'ai', thinkingId);
+
+        // Actual AI Response
+        const aiResponse = await fetchAIResponse(text);
+        updateMessage(thinkingId, aiResponse);
+    }
+
+    function appendMessage(text, sender, id = null) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `msg ${sender}`;
+        msgDiv.innerText = text;
+        if (id) msgDiv.id = id;
+        chatWindow.appendChild(msgDiv);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function updateMessage(id, newText) {
+        const msgDiv = document.getElementById(id);
+        if (msgDiv) msgDiv.innerText = newText;
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    sendBtn.addEventListener('click', handleChat);
+    userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleChat(); });
+</script>
+
+</body>
+</html>
